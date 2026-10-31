@@ -167,7 +167,7 @@ const normBoss=v=>Array.isArray(v)?v.map(x=>typeof x==="string"?{n:x.trim(),img:
 const bossRows=(s,i)=>(s.bosses||[]).map((b,j)=>`<div class="sub" style="grid-template-columns:56px 1fr auto">${thumb(b.img,i+"."+j+".b")}<input data-i="${i}" data-bj="${j}" data-k="n" value="${esc(b.n)}"><button class="btn ghost sm" data-rb="${i}.${j}">ลบ</button></div>`).join("");
 function rebuild(){reqs=orders.map(o=>({...o,id:"s|"+o.no,status:o.status||ST[0]}));if(tab!=="cat"&&!document.querySelector("#dAdd[open]"))render()}
 let assets=null,upT=null;
-const src=id=>/^data:/.test(id)?id:"/_blob/"+encodeURIComponent(id);
+const src=id=>/^(data:|https?:)/.test(id)?id:"/_blob/"+encodeURIComponent(id);
 const d2b=u=>{const[h,b]=u.split(","),m=h.match(/:(.*?);/)[1],bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:m})};
 async function upImgs(){if(!assets)return;for(const s of draft)for(const o of [s,...(s.subs||[]),...(s.bosses||[])])if(o.img&&o.img.startsWith("data:")){o.img=(await assets.upload(d2b(o.img))).id}}
 const tgt=t=>{const[a,b,c]=String(t).split(".");return c==="b"?draft[+a].bosses[+b]:b===undefined?draft[+a]:draft[+a].subs[+b]};
@@ -252,7 +252,7 @@ ADM.addEventListener("click",async e=>{
   else if(t.dataset.as){draft[+t.dataset.as].subs=(draft[+t.dataset.as].subs||[]).concat({n:"ตัวเลือกใหม่",rate:0,active:true});dirty=true;render()}
   else if(t.dataset.rs){const[i,j]=t.dataset.rs.split(".").map(Number);draft[i].subs.splice(j,1);dirty=true;render()}
   else if(t.dataset.rv){draft.splice(+t.dataset.rv,1);dirty=true;render()}
-  else if(t.id==="save"){try{await A("saveCatalog",{services:strip(draft)});cat=clone(draft);dirty=false;render()}catch(x){fail(x)}}
+  else if(t.id==="save"){try{const b=$("#save");if(b){b.disabled=true;b.textContent="กำลังอัปโหลดรูปและบันทึก…"}await upImgs();await A("saveCatalog",{services:draft});cat=clone(draft);dirty=false;render()}catch(x){fail(x);render()}}
   else if(t.id==="copyCat"){try{await navigator.clipboard.writeText(JSON.stringify(draft,null,1));t.textContent="คัดลอกแล้ว ✓"}catch(x){}}
 });
 ADM.addEventListener("change",async e=>{
@@ -296,7 +296,8 @@ async function boot(){
     if(!/^https:/.test(SHEET_URL))return gate("⚙️","ยังไม่ได้ตั้งค่า Google Sheets","ใส่ลิงก์ Apps Script ในค่า SHEET_URL ของไฟล์นี้ก่อน",false);
     let j;try{j=await A("me")}catch(x){if(x.message==="auth"){clrSess();return loginGate("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่")}return gate("⚠️","เชื่อมต่อ Google Sheets ไม่ได้",esc(x.message))}
     meOwner=j.owner;pwDefault=j.pwDefault;me={id:j.me.id,name:j.me.realName||"ทีมงาน"};db=1;
-    try{const c=await api("catalog");cat=c.services&&c.services.length?c.services:null}catch(x){}
+    assets={upload:async b=>{const d=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=no;r.readAsDataURL(b)});return A("upload",{data:d,mime:b.type||"image/webp"})}};
+    try{const c=await api("catalog");cat=c.services&&c.services.length?c.services:null;if(cat){const dc=window.__defcat();cat.forEach(s=>{const d=dc.find(x=>x.n===s.n)||{};s.img=s.img||d.img||"";(s.subs||[]).forEach(u=>{u.img=u.img||(((d.subs||[]).find(y=>y.n===u.n))||{}).img||""});(s.bosses||[]).forEach(b=>{b.img=b.img||(((d.bosses||[]).find(y=>y.n===b.n))||{}).img||""})})}}catch(x){}
     ADM.querySelector(".tabs").hidden=false;$("#logout").hidden=false;
     await refresh();
     if(!poll)poll=setInterval(async()=>{const a=document.activeElement;if(!db||document.hidden||(a&&ADM.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))||document.querySelector("#dAdd[open]"))return;try{await refresh()}catch(x){if(x.message==="auth"){clrSess();loginGate("เซสชันหมดอายุ หรือถูกนำออกจากรายชื่อทีมงาน")}}},20000);
