@@ -221,7 +221,7 @@ function viewCat(){
   <label class="tg" style="margin-top:10px"><input type="checkbox" data-i="${i}" data-k="qty" ${s.qty?"checked":""}> ให้ลูกค้ากรอกจำนวนรอบ (ราคา × จำนวน)</label>
   ${s.subs&&s.subs.length?"":`<label class="tg" style="margin-top:10px"><input type="checkbox" data-i="${i}" data-k="active" ${s.active!==false?"checked":""}> เปิดรับงานบริการนี้</label>`}
   <div class="two"><div><label>หัวข้อตัวเลือกที่ลูกค้าเห็น (เช่น เลือกแผนที่)</label><input data-i="${i}" data-k="subTitle" value="${esc(s.subTitle)}"></div><div><label>ข้อความใต้ตัวเลือก</label><input data-i="${i}" data-k="subNote" value="${esc(s.subNote)}"></div></div>
-  <label>ตัวเลือก (แผนที่ / ระดับ) · ติ๊ก “เปิดรับ” เพื่อเปิดรับงานของตัวเลือกนั้น</label>${(s.subs||[]).map((u,j)=>`<div class="sub ${u.active===false?"off":""}">${s.bosses&&s.bosses.length?"<span></span>":thumb(u.img,i+"."+j)}<input data-i="${i}" data-j="${j}" data-k="n" value="${esc(u.n)}"><input type="number" min="0" data-i="${i}" data-j="${j}" data-k="rate" value="${+u.rate||0}"><label class="tg"><input type="checkbox" data-i="${i}" data-j="${j}" data-k="active" ${u.active!==false?"checked":""}> เปิดรับ</label><button class="btn ghost sm" data-rs="${i}.${j}">ลบ</button></div>${s.bosses&&s.bosses.length?`<div class="two" style="margin:4px 0 0 64px"><input type="number" min="0" data-i="${i}" data-j="${j}" data-k="bundle" placeholder="ราคาเหมาทุกตัว (บาท)" value="${u.bundle||""}"><label class="tg"><input type="checkbox" data-i="${i}" data-j="${j}" data-k="soon" ${u.soon?"checked":""}> แสดง “พบกันเร็วๆ นี้”</label></div>`:""}`).join("")}
+  <label>ตัวเลือก (แผนที่ / ระดับ) · ติ๊ก “เปิดรับ” เพื่อเปิดรับงานของตัวเลือกนั้น</label>${(s.subs||[]).map((u,j)=>`<div class="sub ${u.active===false?"off":""}">${s.bosses&&s.bosses.length?"<span></span>":thumb(u.img,i+"."+j)}<input data-i="${i}" data-j="${j}" data-k="n" value="${esc(u.n)}"><input type="number" min="0" data-i="${i}" data-j="${j}" data-k="rate" value="${+u.rate||0}"><label class="tg"><input type="checkbox" data-i="${i}" data-j="${j}" data-k="active" ${u.active!==false?"checked":""}> เปิดรับ</label><button class="btn ghost sm" data-rs="${i}.${j}">ลบ</button></div><div class="two" style="margin:4px 0 0 64px">${s.bosses&&s.bosses.length?`<input type="number" min="0" data-i="${i}" data-j="${j}" data-k="bundle" placeholder="ราคาเหมาทุกตัว (บาท)" value="${u.bundle||""}">`:"<span></span>"}<label class="tg"><input type="checkbox" data-i="${i}" data-j="${j}" data-k="soon" ${u.soon?"checked":""}> แสดง “พบกันเร็วๆ นี้”</label></div>`).join("")}
   <div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost sm" data-as="${i}">+ เพิ่มตัวเลือก</button><button class="btn ghost sm" data-rv="${i}" style="color:var(--bad)">ลบบริการนี้</button></div></div>`).join("");
 }
 function render(){const v=$("#v");if(!db)return;const keep={};["invMail","dn"].forEach(id=>{const e=$("#"+id);if(e)keep[id]=e.value});v.innerHTML=tab==="req"?viewReq():tab==="que"?viewQue():tab==="team"?viewTeam():viewCat();Object.keys(keep).forEach(id=>{const e=$("#"+id);if(e&&keep[id])e.value=keep[id]});ADM.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===tab))}
@@ -346,16 +346,16 @@ const SR=[
 const MIN=50;
 const $=s=>document.querySelector(s);
 const money=n=>"฿"+Math.round(n).toLocaleString("th-TH");
-let svc=SV[0],srv=SR[0],sub=null,bos=[],cart=[],last="";
+let svc=SV[0],srv=SR[0],sub=null,bos=[],cart=[],last="",sels=[];const multi=()=>svc.subs&&!svc.bosses;
 const rate=()=>sub?sub.rate:(svc.bosses?0:svc.rate), nm=()=>svc.n+(sub?" · "+sub.n:"");
 const allow=s=>s.ok&&(!svc.only||s.n===svc.only)&&cart.every(i=>!i.only||s.n===i.only);
-function pick(x){svc=x;bos=[];sub=x.subs&&!x.bosses?(x.subs.find(u=>!u.off&&!u.soon)||x.subs[0]):null;fillSrv()}
+function pick(x){svc=x;bos=[];sub=x.subs&&!x.bosses?(x.subs.find(u=>!u.off&&!u.soon)||x.subs[0]):null;if(multi()){const f=x.subs.find(u=>!u.off&&!u.soon);sels=f?[f]:[]}else sels=[];fillSrv()}
 function bossBase(){if(!sub||sub.soon||!bos.length)return 0;return sub.bundle&&bos.length===svc.bosses.length?sub.bundle:bos.length*sub.rate}
 function lvPanel(){const ok=sub&&!sub.soon;return `<div class="panel" style="margin-top:10px"><label style="margin:0 0 6px;font-weight:600">${svc.subTitle||"เลือกระดับความยาก"}</label><select id="lvSel"><option value="">— เลือกระดับความยาก —</option>${svc.subs.map((u,i)=>`<option value="${i}" ${u===sub?"selected":""} ${u.off?"disabled":""}>${u.n}</option>`).join("")}</select><div style="margin-top:10px;font-size:.95rem"><span style="color:var(--muted)">ราคา:</span> <b>${!sub?"เลือกระดับความยากเพื่อดูราคา":sub.soon?"พบกันเร็วๆ นี้":(sub.bundle?`ตัวละ ${money(sub.rate)} · เหมา ${svc.bosses.length} ตัว ${money(sub.bundle)}`:`ตัวละ ${money(sub.rate)}`)}</b></div>${ok&&bos.length?`<div style="margin-top:4px;font-size:1.05rem"><span style="color:var(--muted)">รวมที่เลือก (${bos.length} ตัว):</span> <b style="color:var(--brand-d)">${money(Math.max(MIN,bossBase()))}</b></div>`:""}</div>`}
 function subPrice(u){return u.soon?"<small>พบกันเร็วๆ นี้</small>":(u.bundle&&svc.bosses?`<small>${money(u.rate)} / ตัว</small><br><small>เหมา ${svc.bosses.length} ตัว ${money(u.bundle)}</small>`:`<small>${money(u.rate)} / ${svc.u}</small>`)}
 function bossPanel(){const all=bos.length===svc.bosses.length;return `<div class="panel" style="margin-top:10px"><b>เลือกบอส</b><div class="grid" style="margin:8px 0;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">${svc.bosses.map((b,i)=>`<button class="opt ${bos.includes(b.n)?"on":""}" data-b="${i}" style="text-align:center;display:flex;flex-direction:column;justify-content:flex-start">${b.img?`<img class="sp" style="aspect-ratio:1/1" src="${imgSrc(b.img)}" alt="${b.n}">`:`<div class="sp ph" style="aspect-ratio:1/1">${b.n.charAt(0)}</div>`}<b style="display:flex;align-items:center;justify-content:center;min-height:2.9em;line-height:1.3">${b.n}</b><small>${sub&&!sub.soon?money(sub.rate):"&nbsp;"}</small></button>`).join("")}</div><button class="btn ghost" data-ball="1">${all?"ยกเลิกทั้งหมด":"เลือกทั้ง "+svc.bosses.length+" ตัว"}</button>${sub&&!sub.soon&&sub.bundle?`<small style="color:var(--muted);display:block;margin-top:6px">เหมาทั้ง ${svc.bosses.length} ตัว ${money(sub.bundle)} (ปกติ ${money(sub.rate*svc.bosses.length)})</small>`:""}</div>`}
 function drawInfo(){let h="";
- if(svc.bosses)h+=bossPanel()+lvPanel();else if(svc.subs)h+=`<div class="panel" style="margin-top:10px"><b>${svc.subTitle||"เลือกระดับ "+svc.n}</b><div class="grid" style="margin:8px 0">${svc.subs.map((u,i)=>`<button class="opt ${u===sub?"on":""}" data-u="${i}" ${u.off||u.soon?"disabled":""}>${svc.subImg?(u.img?`<img class="sp" src="${imgSrc(u.img)}" alt="${u.n}">`:`<div class="sp ph">🗺️</div>`):""}<b>${u.n}</b>${subPrice(u)}${u.off?'<br><span class="tag t-bad">ปิดรับงาน</span>':""}</button>`).join("")}</div><small style="color:var(--muted)">${svc.subNote||""}</small></div>`;
+ if(svc.bosses)h+=bossPanel()+lvPanel();else if(svc.subs)h+=`<div class="panel" style="margin-top:10px"><b>${svc.subTitle||"เลือกระดับ "+svc.n}</b> <small style="color:var(--muted)">(เลือกได้หลายรายการ)</small><div class="grid" style="margin:8px 0">${svc.subs.map((u,i)=>`<button class="opt ${sels.includes(u)?"on":""}" data-u="${i}" ${u.off||u.soon?"disabled":""}>${svc.subImg?(u.img?`<img class="sp" src="${imgSrc(u.img)}" alt="${u.n}">`:`<div class="sp ph">🗺️</div>`):""}<b>${u.n}</b>${subPrice(u)}${u.off?'<br><span class="tag t-bad">ปิดรับงาน</span>':""}</button>`).join("")}</div><small style="color:var(--muted)">${svc.subNote||""}</small></div>`;
  if(svc.note)h+=`<div class="warn">📌 หมายเหตุ: ${svc.note}</div>`;
  $("#svcInfo").innerHTML=h}
 const st={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -374,6 +374,9 @@ function drawQty(){
 }
 function units(){if(svc.bosses)return bos.length;if(!svc.qty)return 1;const a=+($("#a")||{}).value||0;if(svc.mode==="range"){const b=+$("#b").value||0;return Math.max(0,b-a)}return Math.max(0,a)}
 function calc(){
+  if(multi()){const S=sels,u=units(),m=svc.qty?+$("#speed").value:1;let base=0,price=0,adj=false;const per=S.map(x=>{const b=u*x.rate,raw=b*m,p=u?Math.max(MIN,raw):0;base+=b;price+=p;if(u&&raw<MIN)adj=true;return{s:x,price:p}});
+    $("#lines").innerHTML=[["บริการ",svc.n+(S.length?" · "+S.map(x=>x.n).join(", "):"")],["เซิร์ฟเวอร์",srvName()],["จำนวน",u+" "+svc.u+(S.length>1?" ต่อรายการ":"")],["ราคาพื้นฐาน",money(base)],["ค่าเร่งด่วน",m>1?"+"+money(base*(m-1)):"-"],["ขั้นต่ำ "+money(MIN),adj?"ปรับเป็น "+money(MIN)+" ต่อรายการ":"-"]].map(r=>`<div class="ln"><span>${r[0]}</span><span>${r[1]}</span></div>`).join("");
+    $("#total").textContent=S.length?money(price):"เลือกอย่างน้อย 1 รายการ";return{u,price,m,per}}
   const u=units(),m=svc.qty?+$("#speed").value:1,base=(svc.bosses&&sub&&sub.bundle&&bos.length===svc.bosses.length)?sub.bundle:u*rate(),raw=base*m,price=(svc.bosses&&!sub)||(sub&&sub.soon)?0:u?Math.max(MIN,raw):0;
   $("#lines").innerHTML=[["บริการ",nm()],["เซิร์ฟเวอร์",srvName()],["จำนวน",svc.bosses?(bos.length?bos.join(", "):"ยังไม่ได้เลือกบอส"):u+" "+svc.u],["ราคาพื้นฐาน",money(base)],["ค่าเร่งด่วน",m>1?"+"+money(base*(m-1)):"-"],["ขั้นต่ำ "+money(MIN),u&&raw<MIN?"ปรับเป็น "+money(MIN):"-"]].map(r=>`<div class="ln"><span>${r[0]}</span><span>${r[1]}</span></div>`).join("");
   $("#total").textContent=svc.bosses&&!sub?"เลือกระดับความยาก":sub&&sub.soon?"พบกันเร็วๆ นี้":money(price);return {u,price,m};
@@ -383,7 +386,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.s){pick(SV.find(s=>s.id===t.dataset.s));drawSvc();drawInfo();drawQty();calc()}
   else if(t.dataset.b!==undefined){const n=svc.bosses[+t.dataset.b].n;bos=bos.includes(n)?bos.filter(x=>x!==n):[...bos,n];drawInfo();calc()}
   else if(t.dataset.ball){bos=bos.length===svc.bosses.length?[]:svc.bosses.map(x=>x.n);drawInfo();calc()}
-  else if(t.dataset.u){sub=svc.subs[+t.dataset.u];drawInfo();calc()}
+  else if(t.dataset.u){const u=svc.subs[+t.dataset.u];if(multi())sels=sels.includes(u)?sels.filter(x=>x!==u):[...sels,u];else sub=u;drawInfo();calc()}
   else if(t.id==="addCart")addCart();
   else if(t.dataset.rc!==undefined){cart.splice(+t.dataset.rc,1);drawCart();fillSrv();calc()}
   else if(t.id==="send")send();
@@ -395,6 +398,8 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{if(e.target.closest("#qtyBox")||e.target.id==="speed"||e.target.id==="srvSel")calc()});
 
 function curItem(){const c=calc();
+  if(multi()){if(!sels.length)return"กรุณาเลือกอย่างน้อย 1 รายการ";if(!c.u)return"กรุณาระบุจำนวนงานให้ถูกต้อง (เลเวลปลายทางต้องมากกว่าเลเวลเริ่มต้น)";
+    const detail=svc.mode==="range"?`เลเวล ${$("#a").value} → ${$("#b").value}`:`${c.u} ${svc.u}`;return c.per.map(p=>({svc:svc.n+" · "+p.s.n,detail,price:p.price,fast:c.m>1,only:svc.only||""}))}
   if(svc.bosses&&!sub)return"กรุณาเลือกระดับความยาก";
   if(sub&&sub.soon)return"ระดับนี้ยังไม่เปิดให้บริการ (พบกันเร็วๆ นี้)";
   if(svc.bosses&&!bos.length)return"กรุณาเลือกบอสอย่างน้อย 1 ตัว";
@@ -406,8 +411,8 @@ function drawCart(){const t=cart.reduce((a,i)=>a+i.price,0);
   $("#send").textContent=cart.length?`ส่งคำขอจ้างงาน (${cart.length} รายการ · ${money(t)})`:"ส่งคำขอจ้างงาน"}
 function addCart(){const r=curItem(),m=$("#cartMsg");m.textContent="";
   if(typeof r==="string"){$("#err").textContent=r;return}
-  const test=cart.concat(r);if(!SR.some(x=>x.ok&&test.every(i=>!i.only||x.n===i.only))){$("#err").textContent="รายการนี้ใช้เซิร์ฟเวอร์ต่างจากรายการในตะกร้า กรุณาส่งแยกเป็นคำขอใหม่";return}
-  $("#err").textContent="";cart.push(r);if(svc.bosses){bos=[];drawInfo()}
+  const rs=Array.isArray(r)?r:[r],test=cart.concat(rs);if(!SR.some(x=>x.ok&&test.every(i=>!i.only||x.n===i.only))){$("#err").textContent="รายการนี้ใช้เซิร์ฟเวอร์ต่างจากรายการในตะกร้า กรุณาส่งแยกเป็นคำขอใหม่";return}
+  $("#err").textContent="";cart.push(...rs);if(svc.bosses){bos=[];drawInfo()}else if(multi()){sels=[];drawInfo()}
   drawCart();fillSrv();calc();m.textContent="✓ เพิ่มลงตะกร้าแล้ว เลือกบริการอื่นต่อได้"}
 function send(){
   const v=id=>$("#"+id).value.trim(),err=$("#err");
@@ -429,7 +434,7 @@ function send(){
 const card=o=>`<div class="rq"><b>${o.no}</b> · ${o.svc}<br>${o.srv} · ${o.detail}<br>นัด: ${o.when||"-"}<br>${money(o.price)} · <span class="ok">${o.status}</span><br><small>${o.date}</small></div>`;
 function find(){const o=st.get("br_jobs",[]).find(x=>x.no===$("#qno").value.trim().toUpperCase());$("#found").innerHTML=o?card(o):`<div class="rq">ไม่พบเลขคำขอนี้ในเครื่องนี้</div>`}
 function mine(){const a=st.get("br_jobs",[]);$("#mine").innerHTML=a.length?"<b>คำขอของฉัน</b>"+a.slice().reverse().map(card).join(""):"ยังไม่มีคำขอในเครื่องนี้"}
-fillSrv();initTime();drawSvc();drawInfo();drawQty();calc();drawCart();
+if(multi()){const f=svc.subs.find(u=>!u.off&&!u.soon);sels=f?[f]:[]}fillSrv();initTime();drawSvc();drawInfo();drawQty();calc();drawCart();
 
 /* ---- เชื่อมระบบหลังบ้าน ---- */
 let DB=null,UID=null,isEd=false;
@@ -438,7 +443,7 @@ const toCat=()=>SV0.map(s=>({n:s.n,d:s.d||"",u:s.u,rate:s.rate,only:s.only||"",a
 window.__defcat=toCat;
 function buildSV(c){return c.filter(s=>s.active!==false).map((s,i)=>{const subs=(s.subs||[]).map(u=>({n:u.n,rate:+u.rate||0,bundle:+u.bundle||0,soon:!!u.soon,img:u.img||(((SV0.find(x=>x.n===s.n)||{}).subs||[]).find(y=>y.n===u.n)||{}).img||"",off:u.active===false})),on=subs.filter(u=>!u.off&&!u.soon),bl=(Array.isArray(s.bosses)?s.bosses:String(s.bosses||"").split(",")).map(x=>typeof x==="string"?{n:x.trim(),img:""}:{n:String(x.n||"").trim(),img:x.img||""}).filter(x=>x.n);
   return {id:"s"+i,e:"📦",img:s.img||((SV0.find(x=>x.n===s.n)||{}).img)||"",n:s.n,d:s.d||"",rate:subs.length?Math.min(...(on.length?on:subs).map(u=>u.rate)):(+s.rate||0),mode:"qty",u:s.u||"รอบ",only:s.only||undefined,note:s.note||undefined,qty:!!s.qty,subImg:subs.some(u=>u.img),subTitle:s.subTitle||undefined,subNote:s.subNote||undefined,bosses:bl.length?bl:undefined,subs:subs.length?subs:undefined}})}
-function applyCat(c){const n=buildSV(c);if(!n.length)return;const ps=svc&&svc.n,pu=sub&&sub.n;SV=n;svc=SV.find(s=>s.n===ps)||SV[0];sub=svc.subs?(svc.bosses?(svc.subs.find(u=>u.n===pu&&!u.off)||null):(svc.subs.find(u=>u.n===pu&&!u.off&&!u.soon)||svc.subs.find(u=>!u.off&&!u.soon)||svc.subs[0])):null;bos=bos.filter(b=>svc.bosses&&svc.bosses.some(x=>x.n===b));fillSrv();drawSvc();drawInfo();drawQty();calc()}
+function applyCat(c){const n=buildSV(c);if(!n.length)return;const ps=svc&&svc.n,pu=sub&&sub.n,os=sels.map(x=>x.n);SV=n;svc=SV.find(s=>s.n===ps)||SV[0];sels=multi()?svc.subs.filter(u=>!u.off&&!u.soon&&os.includes(u.n)):[];if(multi()&&!sels.length){const f=svc.subs.find(u=>!u.off&&!u.soon);sels=f?[f]:[]}sub=svc.subs?(svc.bosses?(svc.subs.find(u=>u.n===pu&&!u.off)||null):(svc.subs.find(u=>u.n===pu&&!u.off&&!u.soon)||svc.subs.find(u=>!u.off&&!u.soon)||svc.subs[0])):null;bos=bos.filter(b=>svc.bosses&&svc.bosses.some(x=>x.n===b));fillSrv();drawSvc();drawInfo();drawQty();calc()}
 (async()=>{try{if(!/^https:/.test(SHEET_URL))return;const j=await api("catalog");if(j.services&&j.services.length)applyCat(j.services)}catch(e){}})();
 function route(){const want=location.hash==="#admin";$("#cust").hidden=want;$("#adm").hidden=!want;document.body.classList.toggle("admon",want);if(want&&window.__adm)window.__adm.start()}
 document.addEventListener("change",e=>{const t=e.target;if(t.id==="lvSel"&&svc.subs){sub=t.value===""?null:svc.subs[+t.value];drawInfo();calc()}});
