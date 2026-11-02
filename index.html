@@ -108,8 +108,8 @@ h2{display:flex;width:fit-content;align-items:center;background:rgba(255,255,255
       <div><label>เซิร์ฟเวอร์</label><select id="srvSel"></select></div>
     </div>
     <label>LINE ID</label><input id="cid" placeholder="เช่น @boxrunner">
-    <label>วันและเวลาที่ต้องการนัดหมาย (ลงคิว)</label>
-    <div class="two"><div><input id="day" type="date" aria-label="วันที่นัดหมาย"></div><div><select id="tm" aria-label="เวลานัดหมาย"></select></div></div>
+    <label>วันที่ต้องการนัดหมาย (ลงคิว)</label>
+    <input id="day" type="date" aria-label="วันที่นัดหมาย"><div style="font-size:.85rem;color:var(--muted);margin-top:4px">เลือกเฉพาะวัน ส่วนเวลาจะนัดหมายกันอีกครั้งทางแชทไลน์</div>
     <label>หมายเหตุ</label><textarea id="note" rows="3" placeholder="เป้าหมาย ข้อจำกัด หรือสิ่งที่ไม่ต้องการให้ทำ"></textarea>
     <div class="warn">⚠️ ห้ามกรอกรหัสผ่านหรือข้อมูลล็อกอินในเว็บนี้ ทีมงานจะนัดคุยรายละเอียดผ่านแชทส่วนตัวเท่านั้น และการจ้างเล่นอาจขัดกับข้อกำหนดของเกม ผู้จ้างควรศึกษากฎเกมและยอมรับความเสี่ยงด้วยตนเอง</div>
   </div>
@@ -208,9 +208,9 @@ function viewReq(){
 function viewQue(){
   const act=reqs.filter(r=>r.status!=="ยกเลิก"),cntSlot={};act.forEach(r=>{if(r.slot)cntSlot[r.slot]=(cntSlot[r.slot]||0)+1});
   const up=act.filter(r=>r.slot&&r.slot.slice(0,10)>=todayKey()).sort((a,b)=>a.slot<b.slot?-1:1),none=act.filter(r=>!r.slot);
-  let h=`<div class="note">แสดงคิวตั้งแต่วันนี้เป็นต้นไป ไม่รวมคำขอที่ยกเลิก ช่วงเวลาที่มีมากกว่า 1 คำขอจะขึ้นสีแดง (คิวชนกัน)</div>`,last="";
-  up.forEach(r=>{const d=r.slot.slice(0,10);if(d!==last){h+=`<h3>${dayTxt(d)}</h3>`;last=d}
-    h+=`<div class="slot ${cntSlot[r.slot]>1?"x":""}"><b>${r.slot.slice(11)}</b><span>${esc(r.ign)} · ${esc(r.svc)} ${esc(r.detail)}</span><span class="fx"></span><span class="tag">${esc(r.status)}</span>${cntSlot[r.slot]>1?"<b>⚠ คิวชนกัน</b>":""}</div>`});
+  let h=`<div class="note">แสดงคิวตั้งแต่วันนี้เป็นต้นไป ไม่รวมคำขอที่ยกเลิก ลูกค้าเลือกเฉพาะวัน ส่วนเวลานัดหมายกันทางแชทไลน์ (ถ้าคำขอเก่าที่ระบุเวลาซ้ำกันจะขึ้นสีแดง)</div>`,last="";
+  up.forEach(r=>{const d=r.slot.slice(0,10);if(d!==last){h+=`<h3>${dayTxt(d)} · ${up.filter(x=>x.slot.slice(0,10)===d).length} คิว</h3>`;last=d}
+    h+=`<div class="slot ${cntSlot[r.slot]>1&&r.slot.length>10?"x":""}"><b>${r.slot.slice(11)||"รอนัดเวลา"}</b><span>${esc(r.ign)} · ${esc(r.svc)} ${esc(r.detail)}</span><span class="fx"></span><span class="tag">${esc(r.status)}</span>${cntSlot[r.slot]>1&&r.slot.length>10?"<b>⚠ คิวชนกัน</b>":""}</div>`});
   if(!up.length)h+=`<div class="msg">ยังไม่มีคิวล่วงหน้า</div>`;
   if(none.length)h+=`<h3>ยังไม่ทราบวัน–เวลา</h3>`+none.map(r=>`<div class="slot"><b>${esc(r.no)}</b><span>${esc(r.ign)} · ${esc(r.when||"-")}</span></div>`).join("");
   return h;
@@ -380,7 +380,7 @@ const st={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 function drawSvc(){$("#svcs").innerHTML=SV.map(s=>`<button class="opt ${s===svc?"on":""}" data-s="${s.id}">${s.img?`<img class="sp" src="${imgSrc(s.img)}" alt="${s.n}">`:`<div class="sp ph">${s.e}</div>`}<b>${s.n}</b><small>${s.d}</small><br><small>${s.subs?"เริ่มต้น ":""}${money(s.rate)} / ${s.u}</small>${s.only?`<br><span class="tag t-bad">เฉพาะ ${s.only}</span>`:""}</button>`).join("")}
 function fillSrv(){const sel=$("#srvSel"),cur=sel.value;sel.innerHTML=SR.filter(allow).map(s=>`<option>${s.n}</option>`).join("");if([...sel.options].some(o=>o.value===cur))sel.value=cur}
 const srvName=()=>$("#srvSel").value;
-function initTime(){const d=new Date(),z=n=>String(n).padStart(2,"0");$("#day").min=d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());$("#tm").innerHTML='<option value="">เลือกเวลา</option>'+Array.from({length:14},(_,k)=>`<option>${z(10+k)}:00</option>`).join("")}
+function initTime(){const d=new Date(),z=n=>String(n).padStart(2,"0");$("#day").min=d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());}
 const dayTxt=v=>new Date(v+"T00:00").toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
 function drawQty(){
   $("#detailSec").style.display=svc.qty?"":"none";$("#n3").textContent=svc.qty?"3":"2";
@@ -453,13 +453,13 @@ function send(){
   let items=cart.slice();
   if(!items.length){const r=curItem();if(typeof r==="string"){err.textContent=r;return}items=Array.isArray(r)?r:[r]}
   if(!v("ign")||!v("cid")){err.textContent="กรุณากรอกชื่อตัวละครและ LINE ID";return}
-  if(!v("day")||!v("tm")){err.textContent="กรุณาเลือกวันและเวลาที่ต้องการนัดหมาย";return}
+  if(!v("day")){err.textContent="กรุณาเลือกวันที่ต้องการนัดหมาย";return}
   err.textContent="";items=withFree(items);
   const no="BR"+Date.now().toString().slice(-7),total=items.reduce((a,i)=>a+i.price,0),multi=items.length>1;
   const detail=multi?items.map(i=>i.svc+" ("+i.detail+")").join(" | "):items[0].detail;
-  const o={no,date:new Date().toLocaleString("th-TH"),svc:multi?items.length+" รายการ":items[0].svc,srv:srvName(),detail,price:total,items:items.map(i=>({svc:i.svc,detail:i.detail,price:i.price,fast:i.fast})),ign:v("ign"),ct:"LINE: "+v("cid"),when:dayTxt(v("day"))+" เวลา "+v("tm")+" น.",slot:v("day")+" "+v("tm"),note:v("note"),fast:items.some(i=>i.fast),status:"รอชำระเงิน"};
+  const o={no,date:new Date().toLocaleString("th-TH"),svc:multi?items.length+" รายการ":items[0].svc,srv:srvName(),detail,price:total,items:items.map(i=>({svc:i.svc,detail:i.detail,price:i.price,fast:i.fast})),ign:v("ign"),ct:"LINE: "+v("cid"),when:dayTxt(v("day")),slot:v("day"),note:v("note"),fast:items.some(i=>i.fast),status:"รอชำระเงิน"};
   const all=st.get("br_jobs",[]);all.push(o);st.set("br_jobs",all);
-  last=`คำขอจ้างงาน ${no} · Box Runner TH\n`+(multi?`บริการ: ${items.length} รายการ\n`+items.map((i,k)=>`  ${k+1}) ${i.svc} (${i.detail}) — ${money(i.price)}`).join("\n"):`บริการ: ${o.svc} (${detail})`)+`\nเซิร์ฟเวอร์: ${o.srv}\nความเร็ว: ${o.fast?"ด่วน":"ปกติ"}\nราคาประเมิน: ${money(o.price)}\n\nตัวละคร: ${o.ign}\nติดต่อ: ${o.ct}\nนัดหมาย: ${o.when}\nคิว: ${o.slot}`+(o.note?`\nหมายเหตุ: ${o.note}`:"");
+  last=`คำขอจ้างงาน ${no} · Box Runner TH\n`+(multi?`บริการ: ${items.length} รายการ\n`+items.map((i,k)=>`  ${k+1}) ${i.svc} (${i.detail}) — ${money(i.price)}`).join("\n"):`บริการ: ${o.svc} (${detail})`)+`\nเซิร์ฟเวอร์: ${o.srv}\nความเร็ว: ${o.fast?"ด่วน":"ปกติ"}\nราคาประเมิน: ${money(o.price)}\n\nตัวละคร: ${o.ign}\nติดต่อ: ${o.ct}\nนัดหมาย: ${o.when} (เวลานัดหมายกันทางแชทไลน์)`+(o.note?`\nหมายเหตุ: ${o.note}`:"");
   $("#sumTxt").textContent=last;$("#copy").textContent="คัดลอกสรุป";const dn=$("#dnote");dn.textContent="ขั้นตอน: ① โอนเงินตามบัญชีด้านล่าง ② แนบสลิป ③ แอดไลน์ร้านเพื่อยืนยันการจ้างงาน";drawPay(o);drawSlip(o);$("#dDone").showModal();
   if(/^https:/.test(SHEET_URL)&&!PAY)api("pay").then(j=>{PAY=j.pay||{};drawPay(o)}).catch(()=>{});
   if(/^https:/.test(SHEET_URL))api("submit",{order:{no:o.no,svc:o.svc,detail:o.detail,items:o.items,srv:o.srv,fast:o.fast,price:o.price,ign:o.ign,line:v("cid"),when:o.when,slot:o.slot,note:o.note}}).then(()=>{dn.textContent="✓ ส่งคำขอเข้าระบบร้านแล้ว ① โอนเงินตามบัญชีด้านล่าง ② แนบสลิป ③ แอดไลน์ร้านเพื่อยืนยันการจ้างงาน"},()=>{});
